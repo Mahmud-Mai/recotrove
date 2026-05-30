@@ -1,0 +1,10 @@
+name: local
+variables:
+  - name: base_url
+    value: http://127.0.0.1:8030
+  - secret: true
+    name: access_token
+  - secret: true
+    name: refresh_token
+  - name: one-more
+    value: ""

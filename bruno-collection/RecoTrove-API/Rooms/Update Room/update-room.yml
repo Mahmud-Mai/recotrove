@@ -1,0 +1,21 @@
+info:
+  name: Update Room
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{base_url}}/api/v1/rooms/{{room_id}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Python Study Group (Updated)",
+        "description": "Updated room description"
+      }

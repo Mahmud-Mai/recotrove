@@ -1,0 +1,21 @@
+info:
+  name: Rate Resource in Room
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{base_url}}/api/v1/rooms/{{room_id}}/ratings/{{resource_id}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "rating": 9,
+        "review_text": "Great resource for the group!"
+      }

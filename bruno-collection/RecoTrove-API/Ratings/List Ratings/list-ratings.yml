@@ -1,0 +1,8 @@
+info:
+  name: List Ratings
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{base_url}}/api/v1/resources/{{resource_id}}/ratings"

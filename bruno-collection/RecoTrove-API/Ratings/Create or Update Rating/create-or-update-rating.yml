@@ -1,0 +1,21 @@
+info:
+  name: Create or Update Rating
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{base_url}}/api/v1/resources/{{resource_id}}/ratings"
+  headers:
+    - name: Content-Type
+      value: application/json
+  auth:
+    type: bearer
+    token: "{{access_token}}"
+  body:
+    type: json
+    data: |-
+      {
+        "rating": 8,
+        "review_text": "Excellent resource, highly recommended!"
+      }

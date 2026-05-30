@@ -1,0 +1,11 @@
+info:
+  name: Delete Room
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{base_url}}/api/v1/rooms/{{room_id}}"
+  auth:
+    type: bearer
+    token: "{{access_token}}"
