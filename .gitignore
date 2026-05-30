@@ -1,0 +1,21 @@
+# Environments
+venv/
+.venv/
+env/
+
+# Secrets & Config
+.env
+*.env
+
+# Python bytecode & caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS files
+.DS_Store
+Thumbs.db

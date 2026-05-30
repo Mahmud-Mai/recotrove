@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: recotrove_postgres
+    environment:
+      POSTGRES_USER: recotrove_user
+      POSTGRES_PASSWORD: recotrove_password
+      POSTGRES_DB: recotrove_db
+    ports:
+      - "5462:5432" # Host:Container
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recotrove_user -d recotrove_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - recotrove_network
+
+  # Redis (for caching and future Celery tasks)
+  redis:
+    image: redis:7-alpine
+    container_name: recotrove_redis
+    ports:
+      - "6409:6379"
+    volumes:
+      - ./data/redis:/data
+    command: redis-server --appendonly yes
+    networks:
+      - recotrove_network
+
+  # MinIO (S3-compatible storage for thumbnails)
+  minio:
+    image: minio/minio:latest
+    container_name: recotrove_minio
+    ports:
+      - "9030:9000" # API port
+      - "9031:9001" # Web UI port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - ./data/minio:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - recotrove_network
+
+  # MailHog (for email testing - no real emails sent)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: recotrove_mailhog
+    ports:
+      - "8025:8025" # Web UI
+      - "1025:1025" # SMTP server
+    networks:
+      - recotrove_network
+
+  # Backend API (built from Dockerfile)
+  backend:
+    build: ./backend
+    container_name: recotrove_backend
+    ports:
+      - "8030:8000" # Note: 8000+30 = 8030
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://recotrove_user:recotrove_password@postgres:5432/recotrove_db
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+    volumes:
+      - ./backend:/app # Mount for hot-reload during development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - recotrove_network
+
+networks:
+  recotrove_network:
+    driver: bridge
