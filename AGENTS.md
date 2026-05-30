@@ -35,7 +35,7 @@ backend/
     models/              # SQLAlchemy models (User, Category, Resource, Rating, Room, RoomMember, RoomResource, RoomRating)
     schemas/             # Pydantic schemas (user, category, resource, rating, room)
     api/v1/endpoints/    # route handlers (auth.py, categories.py, resources.py, ratings.py, rooms.py)
-    services/            # service layer — currently empty
+    services/            # service layer (category, resource, rating, room)
     utils/               # utilities — currently empty
   seed_admin.py          # Script to create initial admin user (Docker Compose: `docker-compose exec backend python seed_admin.py`)
 ```
