@@ -34,3 +34,19 @@ Invoke-RestMethod -Uri http://localhost:8030/health
 
 docker-compose build backend
 docker-compose up -d
+
+# Stop everything
+
+docker-compose down
+
+# Remove old volumes (optional, but clean)
+
+docker-compose down -v
+
+# Rebuild with new config
+
+docker-compose up -d --build
+
+# Check backend logs
+
+docker-compose logs backend

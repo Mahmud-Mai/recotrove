@@ -11,7 +11,7 @@ asyncpg==0.30.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.20
-bcrypt==4.2.0  # Explicit for Windows
+bcrypt==4.0.1  # Pinned for passlib 1.7.4 compatibility
 
 # Configuration & Validation
 pydantic==2.10.4

@@ -15,7 +15,7 @@ from app.models.user import User
 
 async def create_admin():
     """Create the first admin user if it doesn't exist"""
-    engine = create_async_engine(settings.DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.database.DATABASE_URL, echo=True)
     async_session = async_sessionmaker(engine, expire_on_commit=False)
 
     async with async_session() as session:

@@ -1,21 +1,31 @@
-# Environments
-venv/
-.venv/
-env/
-
-# Secrets & Config
+# Environment variables
 .env
 *.env
 
-# Python bytecode & caches
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
 
-# OS files
+# Database
+*.db
+*.sqlite
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker
+*.log
+
+# OS
 .DS_Store
 Thumbs.db
