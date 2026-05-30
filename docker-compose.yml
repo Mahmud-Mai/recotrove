@@ -26,8 +26,8 @@ services:
     ports:
       - "8030:8000"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - SECRET_KEY=${SECRET_KEY}
+      - database__DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - security__SECRET_KEY=${SECRET_KEY}
       - FIRST_ADMIN_EMAIL=${FIRST_ADMIN_EMAIL}
       - FIRST_ADMIN_PASSWORD=${FIRST_ADMIN_PASSWORD}
       - FIRST_ADMIN_NAME=${FIRST_ADMIN_NAME}

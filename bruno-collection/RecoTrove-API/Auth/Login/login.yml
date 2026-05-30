@@ -10,9 +10,9 @@ http:
     type: form-urlencoded
     data:
       - name: username
-        value: admin@recotrove.com
+        value: alicewonderland@mailinator.com
       - name: password
-        value: Admin123ChangeMe!
+        value: password123
 
 runtime:
   variables:
@@ -31,3 +31,36 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
+
+examples:
+  - name: POST - Auth - Login- Success
+    request:
+      url: "{{base_url}}/api/v1/auth/login"
+      method: POST
+      body:
+        type: form-urlencoded
+        data:
+          - name: username
+            value: alicewonderland@mailinator.com
+          - name: password
+            value: password123
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: date
+          value: Sat, 30 May 2026 22:43:56 GMT
+        - name: server
+          value: uvicorn
+        - name: content-length
+          value: "472"
+        - name: content-type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNDI4MmJjYS0zZTVlLTQ4MGQtYjdiNi00MDhmZTU0ZWFmNzYiLCJyb2xlIjoidXNlciIsImV4cCI6MTc4MDE4MjgzNywidHlwZSI6ImFjY2VzcyJ9.685aLBbQPR_-dLgs2JFef97idrwdcXjOQA0zKQcS6jI",
+            "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNDI4MmJjYS0zZTVlLTQ4MGQtYjdiNi00MDhmZTU0ZWFmNzYiLCJyb2xlIjoidXNlciIsImV4cCI6MTc4MDc4NTgzNywidHlwZSI6InJlZnJlc2gifQ.LuSMvxn0_wt6G2mYU6GLt5Fk0KrBfiWuYpykk4Ge8aQ",
+            "token_type": "bearer"
+          }

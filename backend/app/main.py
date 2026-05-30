@@ -1,23 +1,24 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from sqlalchemy import text
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.seeding import seed_admin
 from app.api.v1.endpoints import auth, categories, resources, ratings, rooms
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Handle startup and shutdown events"""
-    # Startup: Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    # TODO: Seed admin user here (next step)
+    async with AsyncSessionLocal() as session:
+        await seed_admin(session)
 
     yield
 
-    # Shutdown: Clean up
     await engine.dispose()
 
 # Create FastAPI app
@@ -53,4 +54,11 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    db_status = "unhealthy"
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+            db_status = "healthy"
+    except Exception:
+        pass
+    return {"status": "healthy", "database": db_status}
