@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom"
 import { AppLayout } from "./components/app-layout"
 import LoginPage from "./pages/login"
 import RegisterPage from "./pages/register"
+import ResourcesPage from "./pages/resources"
 
 const queryClient = new QueryClient()
 
@@ -61,7 +62,7 @@ function App() {
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
-                <Route path="/resources" element={<div className="py-12 text-center text-muted-foreground">Resources coming soon...</div>} />
+                <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/rooms" element={<div className="py-12 text-center text-muted-foreground">Rooms coming soon...</div>} />
               </Routes>
             </AppLayout>

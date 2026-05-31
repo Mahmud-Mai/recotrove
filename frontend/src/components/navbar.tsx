@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom"
 import { useAuth } from "../context/auth-context"
 import { ThemeToggle } from "./theme-toggle"
-import { LogIn, UserPlus, Layers, Users } from "lucide-react"
 
 export function Navbar() {
   const { user, logout } = useAuth()

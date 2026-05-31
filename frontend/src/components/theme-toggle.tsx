@@ -1,4 +1,4 @@
-import { Sun, Moon, Laptop, User, LogOut } from "lucide-react"
+import { Sun, Moon, Laptop } from "lucide-react"
 import { useTheme } from "./theme-provider"
 import { cn } from "../lib/utils"
 
