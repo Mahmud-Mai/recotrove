@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
+from app.schemas.resource import ResourceListResponse
 
 class RoomCreate(BaseModel):
     name: str = Field(..., max_length=255)
@@ -15,6 +16,7 @@ class RoomResponse(BaseModel):
     invite_code: str
     is_private: bool
     created_at: datetime
+    member_count: int = 0
 
     class Config:
         from_attributes = True
@@ -30,6 +32,7 @@ class RoomResourceResponse(BaseModel):
     resource_id: UUID
     added_by: UUID
     added_at: datetime
+    resource: ResourceListResponse
 
     class Config:
         from_attributes = True

@@ -18,14 +18,14 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      // FastAPI OAuth2 uses form data
-      const formData = new FormData()
-      formData.append("username", email)
-      formData.append("password", password)
+      // FastAPI OAuth2 uses application/x-www-form-urlencoded
+      const params = new URLSearchParams()
+      params.append("username", email)
+      params.append("password", password)
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL || "http://localhost:8030/api/v1"}/auth/login`,
-        formData
+        params
       )
 
       login(response.data.access_token)

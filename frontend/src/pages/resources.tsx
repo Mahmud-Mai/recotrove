@@ -2,12 +2,16 @@ import { useQuery } from "@tanstack/react-query"
 import axios from "axios"
 import { ResourceCard } from "../components/resource-card"
 import type { Resource } from "../components/resource-card"
+import { RatingModal } from "../components/rating-modal"
 import { Loader2, Plus, Filter } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useState } from "react"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8030/api/v1"
 
 export default function ResourcesPage() {
+  const [ratingResource, setRatingResource] = useState<{ id: string, title: string } | null>(null)
+
   const { data: resources, isLoading, error } = useQuery<Resource[]>({
     queryKey: ["resources"],
     queryFn: async () => {
@@ -76,9 +80,22 @@ export default function ResourcesPage() {
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {resources.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} />
+            <ResourceCard 
+              key={resource.id} 
+              resource={resource} 
+              onRate={() => setRatingResource({ id: resource.id, title: resource.title })}
+            />
           ))}
         </div>
+      )}
+
+      {ratingResource && (
+        <RatingModal
+          isOpen={!!ratingResource}
+          onClose={() => setRatingResource(null)}
+          resourceId={ratingResource.id}
+          resourceTitle={ratingResource.title}
+        />
       )}
     </div>
   )

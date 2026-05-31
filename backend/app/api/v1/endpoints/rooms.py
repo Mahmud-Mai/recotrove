@@ -49,6 +49,14 @@ async def delete_room(
 ):
     await RoomService.delete(db, room_id, user.id)
 
+@router.post("/join")
+async def join_room_by_code(
+    data: RoomJoin,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_active_user),
+):
+    return await RoomService.join_by_code(db, data, user.id)
+
 @router.post("/{room_id}/join")
 async def join_room(
     room_id: UUID,

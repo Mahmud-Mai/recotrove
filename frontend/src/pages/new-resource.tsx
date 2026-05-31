@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { useAuth } from "../context/auth-context"
@@ -18,7 +18,10 @@ interface Category {
 export default function NewResourcePage() {
   const { token } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
+  
+  const roomId = searchParams.get("roomId")
   
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
@@ -46,14 +49,31 @@ export default function NewResourcePage() {
 
   const mutation = useMutation({
     mutationFn: async (newResource: any) => {
+      // 1. Create the resource
       const response = await axios.post(`${API_URL}/resources`, newResource, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      return response.data
+      const createdResource = response.data
+
+      // 2. If roomId is present, add it to the room
+      if (roomId) {
+        await axios.post(
+          `${API_URL}/rooms/${roomId}/resources`, 
+          { resource_id: createdResource.id },
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+      }
+      
+      return createdResource
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resources"] })
-      navigate("/resources")
+      if (roomId) {
+        queryClient.invalidateQueries({ queryKey: ["room-resources", roomId] })
+        navigate(`/rooms/${roomId}`)
+      } else {
+        navigate("/resources")
+      }
     },
     onError: (err: any) => {
       setError(err.response?.data?.detail || "Failed to create resource. Please try again.")

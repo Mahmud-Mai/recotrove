@@ -11,7 +11,7 @@ router = APIRouter(tags=["ratings"])
 
 @router.get("/resources/{resource_id}/ratings", response_model=list[RatingResponse])
 async def list_ratings(resource_id: UUID, db: AsyncSession = Depends(get_db)):
-    return await RatingService.list(db, resource_id)
+    return await RatingService.get_all(db, resource_id)
 
 @router.post("/resources/{resource_id}/ratings", response_model=RatingResponse, status_code=201)
 async def create_or_update_rating(

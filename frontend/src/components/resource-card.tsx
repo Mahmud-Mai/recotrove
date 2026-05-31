@@ -1,4 +1,4 @@
-import { ExternalLink, Star, User } from "lucide-react"
+import { ExternalLink, Star } from "lucide-react"
 import { cn } from "../lib/utils"
 
 export interface Resource {
@@ -17,9 +17,11 @@ export interface Resource {
 interface ResourceCardProps {
   resource: Resource
   className?: string
+  onRate?: (resourceId: string) => void
+  isRoomContext?: boolean
 }
 
-export function ResourceCard({ resource, className }: ResourceCardProps) {
+export function ResourceCard({ resource, className, onRate, isRoomContext }: ResourceCardProps) {
   return (
     <div className={cn(
       "group relative flex flex-col overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm transition-all hover:border-border hover:shadow-lg hover:-translate-y-1",
@@ -44,16 +46,18 @@ export function ResourceCard({ resource, className }: ResourceCardProps) {
           <h3 className="font-semibold leading-tight text-foreground line-clamp-2">
             {resource.title}
           </h3>
-          {resource.external_link && (
-            <a 
-              href={resource.external_link} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-primary transition-colors p-1"
-            >
-              <ExternalLink size={16} />
-            </a>
-          )}
+          <div className="flex items-center gap-1">
+            {resource.external_link && (
+              <a 
+                href={resource.external_link} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors p-1"
+              >
+                <ExternalLink size={16} />
+              </a>
+            )}
+          </div>
         </div>
 
         {resource.description && (
@@ -63,22 +67,29 @@ export function ResourceCard({ resource, className }: ResourceCardProps) {
         )}
 
         <div className="flex items-center justify-between mt-auto pt-4 border-t border-border/40">
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center text-amber-500">
-              <Star size={14} fill="currentColor" />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center text-amber-500">
+                <Star size={14} fill="currentColor" />
+              </div>
+              <span className="text-sm font-medium">
+                {resource.average_rating > 0 ? resource.average_rating.toFixed(1) : "N/A"}
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider ml-1">
+                {isRoomContext ? "Room" : "Public"}
+              </span>
             </div>
-            <span className="text-sm font-medium">
-              {resource.average_rating > 0 ? resource.average_rating.toFixed(1) : "N/A"}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              ({resource.total_ratings})
+            <span className="text-[10px] text-muted-foreground">
+              {resource.total_ratings} ratings
             </span>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <User size={12} />
-            <span className="truncate max-w-[80px]">Curated</span>
-          </div>
+          <button 
+            onClick={() => onRate?.(resource.id)}
+            className="inline-flex items-center justify-center rounded-md bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-secondary/80 transition-colors"
+          >
+            Rate
+          </button>
         </div>
       </div>
     </div>

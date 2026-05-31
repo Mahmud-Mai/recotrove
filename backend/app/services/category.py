@@ -8,7 +8,7 @@ from app.schemas.category import CategoryCreate
 
 class CategoryService:
     @staticmethod
-    async def list(db: AsyncSession, only_top_level: bool = False) -> list[Category]:
+    async def get_all(db: AsyncSession, only_top_level: bool = False) -> list[Category]:
         query = select(Category).order_by(Category.name).options(selectinload(Category.children))
         if only_top_level:
             query = query.where(Category.parent_category_id == None)

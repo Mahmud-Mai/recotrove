@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, ForeignKey, UniqueConstraint, PrimaryKeyConstraint
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from datetime import datetime
@@ -15,6 +16,12 @@ class Room(Base):
     is_private = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
+    # Relationships
+    owner = relationship("User", foreign_keys=[owner_id])
+    members = relationship("RoomMember", back_populates="room", cascade="all, delete-orphan")
+    resources = relationship("RoomResource", back_populates="room", cascade="all, delete-orphan")
+    ratings = relationship("RoomRating", back_populates="room", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Room {self.name}>"
 
@@ -24,6 +31,10 @@ class RoomMember(Base):
     room_id = Column(UUID(as_uuid=True), ForeignKey("rooms.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     joined_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    room = relationship("Room", back_populates="members")
+    user = relationship("User")
 
     def __repr__(self):
         return f"<RoomMember room={self.room_id} user={self.user_id}>"
@@ -35,6 +46,11 @@ class RoomResource(Base):
     resource_id = Column(UUID(as_uuid=True), ForeignKey("resources.id", ondelete="CASCADE"), primary_key=True)
     added_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     added_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    room = relationship("Room", back_populates="resources")
+    resource = relationship("Resource")
+    creator = relationship("User", foreign_keys=[added_by])
 
     def __repr__(self):
         return f"<RoomResource room={self.room_id} resource={self.resource_id}>"
@@ -49,6 +65,11 @@ class RoomRating(Base):
     rating = Column(Integer, nullable=False)
     review_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    room = relationship("Room", back_populates="ratings")
+    resource = relationship("Resource")
+    user = relationship("User")
 
     __table_args__ = (
         UniqueConstraint("room_id", "resource_id", "user_id", name="uq_room_rating"),

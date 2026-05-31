@@ -4,6 +4,8 @@ import axios from "axios"
 import { useAuth } from "../context/auth-context"
 import { ResourceCard } from "../components/resource-card"
 import type { Resource } from "../components/resource-card"
+import { RatingModal } from "../components/rating-modal"
+import { AddResourceModal } from "../components/add-resource-modal"
 import { Loader2, Plus, Users, Shield, Copy, Check, MoreVertical, MessageSquare } from "lucide-react"
 import { useState } from "react"
 
@@ -16,6 +18,15 @@ interface Room {
   owner_id: string
   invite_code: string
   created_at: string
+  member_count: number
+}
+
+interface RoomResource {
+  room_id: string
+  resource_id: string
+  added_by: string
+  added_at: string
+  resource: Resource
 }
 
 export default function RoomDetailPage() {
@@ -23,6 +34,10 @@ export default function RoomDetailPage() {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [copied, setCopied] = useState(false)
+  
+  // Modal states
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [ratingResource, setRatingResource] = useState<{ id: string, title: string } | null>(null)
 
   const { data: room, isLoading: isLoadingRoom } = useQuery<Room>({
     queryKey: ["room", id],
@@ -35,7 +50,7 @@ export default function RoomDetailPage() {
     enabled: !!token && !!id
   })
 
-  const { data: resources, isLoading: isLoadingResources } = useQuery<Resource[]>({
+  const { data: roomResources, isLoading: isLoadingResources } = useQuery<RoomResource[]>({
     queryKey: ["room-resources", id],
     queryFn: async () => {
       const response = await axios.get(`${API_URL}/rooms/${id}/resources`, {
@@ -99,11 +114,11 @@ export default function RoomDetailPage() {
             <div className="flex items-center gap-6 pt-4">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Users size={16} className="text-muted-foreground" />
-                <span>Members active</span>
+                <span>{room.member_count} {room.member_count === 1 ? 'Member' : 'Members'}</span>
               </div>
               <div className="flex items-center gap-2 text-sm font-medium">
                 <MessageSquare size={16} className="text-muted-foreground" />
-                <span>{resources?.length || 0} Resources</span>
+                <span>{roomResources?.length || 0} Resources</span>
               </div>
             </div>
           </div>
@@ -121,7 +136,10 @@ export default function RoomDetailPage() {
                 {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
               </button>
             </div>
-            <button className="inline-flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-lg hover:shadow-primary/20 transition-all hover:-translate-y-0.5">
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-lg hover:shadow-primary/20 transition-all hover:-translate-y-0.5"
+            >
               <Plus size={18} />
               Add to Circle
             </button>
@@ -141,7 +159,7 @@ export default function RoomDetailPage() {
               <div key={i} className="aspect-[3/4] rounded-xl bg-muted animate-pulse" />
             ))}
           </div>
-        ) : !resources || resources.length === 0 ? (
+        ) : !roomResources || roomResources.length === 0 ? (
           <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/30 text-center p-12">
             <div className="bg-background p-4 rounded-full shadow-sm mb-4">
               <Plus className="h-6 w-6 text-muted-foreground" />
@@ -150,18 +168,43 @@ export default function RoomDetailPage() {
             <p className="text-muted-foreground max-w-sm mb-6">
               Start sharing exclusive recommendations that only members of this circle can see.
             </p>
-            <button className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90">
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+            >
               Add first resource
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {resources.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+            {roomResources.map((rr) => (
+              <ResourceCard 
+                key={rr.resource_id} 
+                resource={rr.resource} 
+                isRoomContext
+                onRate={() => setRatingResource({ id: rr.resource_id, title: rr.resource.title })}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Modals */}
+      <AddResourceModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        roomId={id!} 
+      />
+      
+      {ratingResource && (
+        <RatingModal
+          isOpen={!!ratingResource}
+          onClose={() => setRatingResource(null)}
+          resourceId={ratingResource.id}
+          resourceTitle={ratingResource.title}
+          roomId={id}
+        />
+      )}
     </div>
   )
 }

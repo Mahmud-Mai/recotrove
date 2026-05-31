@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from uuid import UUID
 import secrets
@@ -11,18 +12,40 @@ class RoomService:
     @staticmethod
     async def list_member_rooms(db: AsyncSession, user_id: UUID) -> list[Room]:
         result = await db.execute(
-            select(Room).join(RoomMember, RoomMember.room_id == Room.id, isouter=True)
+            select(
+                Room,
+                func.count(RoomMember.user_id).label("member_count")
+            )
+            .join(RoomMember, RoomMember.room_id == Room.id, isouter=True)
             .where((Room.owner_id == user_id) | (RoomMember.user_id == user_id))
-            .distinct().order_by(Room.created_at.desc())
+            .group_by(Room.id)
+            .order_by(Room.created_at.desc())
         )
-        return result.scalars().all()
+        
+        rooms = []
+        for row in result.all():
+            room = row[0]
+            room.member_count = row.member_count
+            rooms.append(room)
+        return rooms
 
     @staticmethod
     async def get(db: AsyncSession, room_id: UUID) -> Room:
-        result = await db.execute(select(Room).where(Room.id == room_id))
-        room = result.scalar_one_or_none()
-        if not room:
+        result = await db.execute(
+            select(
+                Room,
+                func.count(RoomMember.user_id).label("member_count")
+            )
+            .join(RoomMember, RoomMember.room_id == Room.id, isouter=True)
+            .where(Room.id == room_id)
+            .group_by(Room.id)
+        )
+        row = result.one_or_none()
+        if not row:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        
+        room = row[0]
+        room.member_count = row.member_count
         return room
 
     @staticmethod
@@ -87,20 +110,89 @@ class RoomService:
         return {"detail": "Joined room", "room_id": str(room_id)}
 
     @staticmethod
-    async def list_resources(db: AsyncSession, room_id: UUID) -> list[RoomResource]:
-        result = await db.execute(
-            select(RoomResource).where(RoomResource.room_id == room_id).order_by(RoomResource.added_at.desc())
+    async def join_by_code(db: AsyncSession, data: RoomJoin, user_id: UUID) -> dict:
+        result = await db.execute(select(Room).where(Room.invite_code == data.invite_code))
+        room = result.scalar_one_or_none()
+        
+        if not room:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid invite code")
+
+        member_check = await db.execute(
+            select(RoomMember).where(RoomMember.room_id == room.id, RoomMember.user_id == user_id)
         )
-        return result.scalars().all()
+        if member_check.scalar_one_or_none():
+            return {"detail": "Already a member", "room_id": str(room.id)}
+
+        member = RoomMember(room_id=room.id, user_id=user_id)
+        db.add(member)
+        await db.commit()
+        return {"detail": "Joined room", "room_id": str(room.id)}
 
     @staticmethod
-    async def add_resource(db: AsyncSession, room_id: UUID, resource_id: UUID, user_id: UUID) -> RoomResource:
+    async def list_resources(db: AsyncSession, room_id: UUID) -> list[dict]:
+        # We want to return RoomResource joined with Resource, 
+        # plus room-specific average ratings
+        query = (
+            select(
+                RoomResource,
+                Resource,
+                func.coalesce(func.avg(RoomRating.rating), 0).label("room_avg"),
+                func.count(RoomRating.id).label("room_count")
+            )
+            .join(Resource, Resource.id == RoomResource.resource_id)
+            .outerjoin(
+                RoomRating, 
+                (RoomRating.room_id == RoomResource.room_id) & 
+                (RoomRating.resource_id == RoomResource.resource_id)
+            )
+            .where(RoomResource.room_id == room_id)
+            .group_by(RoomResource.room_id, RoomResource.resource_id, Resource.id)
+            .options(selectinload(Resource.tags))
+            .order_by(RoomResource.added_at.desc())
+        )
+        
+        result = await db.execute(query)
+        rows = result.all()
+        
+        from app.schemas.resource import ResourceListResponse
+        from app.schemas.tag import TagResponse
+
+        output = []
+        for rr, res, avg, count in rows:
+            res_dto = ResourceListResponse(
+                id=res.id,
+                title=res.title,
+                description=res.description,
+                thumbnail_url=res.thumbnail_url,
+                external_link=res.external_link,
+                category_id=res.category_id,
+                created_by=res.created_by,
+                created_at=res.created_at,
+                updated_at=res.updated_at,
+                tags=[TagResponse.model_validate(t) for t in res.tags],
+                average_rating=round(float(avg), 1),
+                total_ratings=count,
+            )
+            output.append({
+                "room_id": rr.room_id,
+                "resource_id": rr.resource_id,
+                "added_by": rr.added_by,
+                "added_at": rr.added_at,
+                "resource": res_dto
+            })
+        return output
+
+    @staticmethod
+    async def add_resource(db: AsyncSession, room_id: UUID, resource_id: UUID, user_id: UUID) -> dict:
         room_check = await db.execute(select(Room).where(Room.id == room_id))
         if not room_check.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
 
-        res_check = await db.execute(select(Resource).where(Resource.id == resource_id))
-        if not res_check.scalar_one_or_none():
+        res_check = await db.execute(
+            select(Resource).where(Resource.id == resource_id).options(selectinload(Resource.tags))
+        )
+        res = res_check.scalar_one_or_none()
+        if not res:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
 
         dup = await db.execute(
@@ -113,7 +205,32 @@ class RoomService:
         db.add(rr)
         await db.commit()
         await db.refresh(rr)
-        return rr
+        
+        from app.schemas.resource import ResourceListResponse
+        from app.schemas.tag import TagResponse
+        
+        res_dto = ResourceListResponse(
+            id=res.id,
+            title=res.title,
+            description=res.description,
+            thumbnail_url=res.thumbnail_url,
+            external_link=res.external_link,
+            category_id=res.category_id,
+            created_by=res.created_by,
+            created_at=res.created_at,
+            updated_at=res.updated_at,
+            tags=[TagResponse.model_validate(t) for t in res.tags],
+            average_rating=0.0,
+            total_ratings=0,
+        )
+
+        return {
+            "room_id": rr.room_id,
+            "resource_id": rr.resource_id,
+            "added_by": rr.added_by,
+            "added_at": rr.added_at,
+            "resource": res_dto
+        }
 
     @staticmethod
     async def list_ratings(db: AsyncSession, room_id: UUID, resource_id: UUID) -> list[RoomRating]:

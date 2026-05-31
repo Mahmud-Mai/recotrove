@@ -12,7 +12,7 @@ from app.schemas.tag import TagResponse
 
 class ResourceService:
     @staticmethod
-    async def list(db: AsyncSession, category_id: UUID | None = None) -> list[ResourceListResponse]:
+    async def get_all(db: AsyncSession, category_id: UUID | None = None) -> list[ResourceListResponse]:
         query = select(
             Resource,
             func.coalesce(func.avg(Rating.rating), 0).label("average_rating"),
@@ -38,8 +38,8 @@ class ResourceService:
                 created_at=row[0].created_at,
                 updated_at=row[0].updated_at,
                 tags=[TagResponse.model_validate(t) for t in row[0].tags],
-                average_rating=round(float(row.average_rating), 1),
-                total_ratings=row.total_ratings,
+                average_rating=round(float(row[1]), 1),
+                total_ratings=row[2],
             )
             for row in rows
         ]
@@ -131,6 +131,17 @@ class ResourceService:
         )
 
     @staticmethod
+    async def _get_avg_data(db: AsyncSession, resource_id: UUID) -> tuple[float, int]:
+        result = await db.execute(
+            select(
+                func.coalesce(func.avg(Rating.rating), 0).label("average_rating"),
+                func.count(Rating.id).label("total_ratings"),
+            ).where(Rating.resource_id == resource_id)
+        )
+        row = result.one()
+        return round(float(row.average_rating), 1), row.total_ratings
+
+    @staticmethod
     async def update(db: AsyncSession, resource_id: UUID, data: ResourceUpdate, user_id: UUID) -> ResourceListResponse:
         resource = await ResourceService._get_raw(db, resource_id)
 
@@ -165,6 +176,39 @@ class ResourceService:
             average_rating=average_rating,
             total_ratings=total_ratings,
         )
+
+    @staticmethod
+    async def search(db: AsyncSession, q: str) -> list[ResourceListResponse]:
+        query = select(
+            Resource,
+            func.coalesce(func.avg(Rating.rating), 0).label("average_rating"),
+            func.count(Rating.id).label("total_ratings"),
+        ).outerjoin(Rating, Rating.resource_id == Resource.id)
+        
+        query = query.where(Resource.title.ilike(f"%{q}%"))
+        query = query.group_by(Resource.id).order_by(Resource.created_at.desc())
+        
+        result = await db.execute(query)
+        rows = result.all()
+
+        from app.schemas.tag import TagResponse
+        return [
+            ResourceListResponse(
+                id=row[0].id,
+                title=row[0].title,
+                description=row[0].description,
+                thumbnail_url=row[0].thumbnail_url,
+                external_link=row[0].external_link,
+                category_id=row[0].category_id,
+                created_by=row[0].created_by,
+                created_at=row[0].created_at,
+                updated_at=row[0].updated_at,
+                tags=[TagResponse.model_validate(t) for t in row[0].tags],
+                average_rating=round(float(row[1]), 1),
+                total_ratings=row[2],
+            )
+            for row in rows
+        ]
 
     @staticmethod
     async def delete(db: AsyncSession, resource_id: UUID, user_id: UUID) -> None:

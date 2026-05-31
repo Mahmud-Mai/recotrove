@@ -14,7 +14,11 @@ async def list_resources(
     category_id: UUID = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    return await ResourceService.list(db, category_id)
+    return await ResourceService.get_all(db, category_id)
+
+@router.get("/search", response_model=list[ResourceListResponse])
+async def search_resources(q: str, db: AsyncSession = Depends(get_db)):
+    return await ResourceService.search(db, q)
 
 @router.get("/{resource_id}", response_model=ResourceListResponse)
 async def get_resource(resource_id: UUID, db: AsyncSession = Depends(get_db)):

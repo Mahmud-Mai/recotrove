@@ -14,7 +14,7 @@ async def list_categories(
     only_top_level: bool = False,
     db: AsyncSession = Depends(get_db)
 ):
-    return await CategoryService.list(db, only_top_level=only_top_level)
+    return await CategoryService.get_all(db, only_top_level=only_top_level)
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(category_id: UUID, db: AsyncSession = Depends(get_db)):

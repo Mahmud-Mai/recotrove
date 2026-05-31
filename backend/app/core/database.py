@@ -76,31 +76,7 @@ def receive_connect(dbapi_connection, connection_record):
 async def get_db() -> AsyncSession:
     """
     FastAPI dependency that provides a database session.
-
-    How it works:
-    1. Each request that needs database access calls this function
-    2. It creates a new AsyncSession from the pool
-    3. The session is automatically closed when the request finishes
-    4. All database operations within the request use the same session
-
-    Usage in endpoint:
-    @app.get("/users")
-    async def get_users(db: AsyncSession = Depends(get_db)):
-        result = await db.execute(select(User))
-        return result.scalars().all()
-
-    Yields:
-        AsyncSession: Database session for the current request context
+    The session is automatically closed when the request finishes.
     """
     async with AsyncSessionLocal() as session:
-        try:
-            yield session
-            # If no exceptions, commit any pending changes
-            await session.commit()
-        except Exception:
-            # On error, rollback the transaction
-            await session.rollback()
-            raise
-        finally:
-            # Session automatically closed by context manager
-            await session.close()
+        yield session

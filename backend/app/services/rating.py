@@ -8,7 +8,7 @@ from app.schemas.rating import RatingCreate, AverageRating
 
 class RatingService:
     @staticmethod
-    async def list(db: AsyncSession, resource_id: UUID) -> list[Rating]:
+    async def get_all(db: AsyncSession, resource_id: UUID) -> list[Rating]:
         result = await db.execute(
             select(Rating).where(Rating.resource_id == resource_id).order_by(Rating.created_at.desc())
         )
