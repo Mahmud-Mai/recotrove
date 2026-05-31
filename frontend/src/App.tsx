@@ -6,6 +6,7 @@ import { AppLayout } from "./components/app-layout"
 import LoginPage from "./pages/login"
 import RegisterPage from "./pages/register"
 import ResourcesPage from "./pages/resources"
+import NewResourcePage from "./pages/new-resource"
 
 const queryClient = new QueryClient()
 
@@ -63,6 +64,7 @@ function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
+                <Route path="/resources/new" element={<NewResourcePage />} />
                 <Route path="/rooms" element={<div className="py-12 text-center text-muted-foreground">Rooms coming soon...</div>} />
               </Routes>
             </AppLayout>
