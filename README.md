@@ -1,7 +1,5 @@
 # RecoTrove
-
-#### Video Demo: <URL HERE>
-
+#### Video Demo:  https://youtu.be/GmKoLPi4UFE
 #### Description:
 
 RecoTrove is a full-stack web application for cataloging, rating, and sharing personal recommendations. Users can create curated collections of books, movies, TV shows, courses, and other media — each tagged and categorized — and share them with friends through private rooms with invite codes. Think of it as a personal recommendation engine where you track what you love, rate it on a 1-10 scale, organize it into categories, and share access with trusted circles.

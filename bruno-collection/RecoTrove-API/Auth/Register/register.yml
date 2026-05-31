@@ -13,9 +13,9 @@ http:
     type: json
     data: |-
       {
-        "email": "alicewonderland@mailinator.com",
+        "email": "sheldoncooper@mailinator.com",
         "password": "password123",
-        "full_name": "Alice Wonderland"
+        "full_name": "Sheldon Cooper"
       }
 
 settings:
