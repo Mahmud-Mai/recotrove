@@ -7,6 +7,10 @@ import LoginPage from "./pages/login"
 import RegisterPage from "./pages/register"
 import ResourcesPage from "./pages/resources"
 import NewResourcePage from "./pages/new-resource"
+import RoomsPage from "./pages/rooms"
+import NewRoomPage from "./pages/new-room"
+import JoinRoomPage from "./pages/join-room"
+import RoomDetailPage from "./pages/room-detail"
 
 const queryClient = new QueryClient()
 
@@ -65,7 +69,10 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/resources" element={<ResourcesPage />} />
                 <Route path="/resources/new" element={<NewResourcePage />} />
-                <Route path="/rooms" element={<div className="py-12 text-center text-muted-foreground">Rooms coming soon...</div>} />
+                <Route path="/rooms" element={<RoomsPage />} />
+                <Route path="/rooms/new" element={<NewRoomPage />} />
+                <Route path="/rooms/join" element={<JoinRoomPage />} />
+                <Route path="/rooms/:id" element={<RoomDetailPage />} />
               </Routes>
             </AppLayout>
           </Router>

@@ -15,11 +15,13 @@ async def seed_taxonomy():
     engine = create_async_engine(settings.database.DATABASE_URL, echo=True)
     async_session = async_sessionmaker(engine, expire_on_commit=False)
 
+    # Note: Sub-category names are prefixed with Type to avoid UniqueViolation
+    # since 'Series' might exist under both 'Anime' and 'Kdrama'.
     taxonomy = {
         "Books": ["Fiction", "Non-Fiction", "Academic", "Graphic Novels"],
         "Movies": ["Feature Film", "Documentary", "Short Film", "Animation"],
-        "Anime": ["Series", "Movie", "OVA", "ONA"],
-        "Kdrama": ["Series", "Movie", "Special"],
+        "Anime": ["Anime Series", "Anime Movie", "OVA", "ONA"],
+        "Kdrama": ["Kdrama Series", "Kdrama Movie", "Special"],
         "Courses": ["Programming", "Design", "Business", "Personal Development"]
     }
 
