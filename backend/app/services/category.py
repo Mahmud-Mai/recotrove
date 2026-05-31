@@ -1,5 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from uuid import UUID
 from app.models.category import Category
@@ -7,13 +8,21 @@ from app.schemas.category import CategoryCreate
 
 class CategoryService:
     @staticmethod
-    async def list(db: AsyncSession) -> list[Category]:
-        result = await db.execute(select(Category).order_by(Category.name))
+    async def list(db: AsyncSession, only_top_level: bool = False) -> list[Category]:
+        query = select(Category).order_by(Category.name).options(selectinload(Category.children))
+        if only_top_level:
+            query = query.where(Category.parent_category_id == None)
+        
+        result = await db.execute(query)
         return result.scalars().all()
 
     @staticmethod
     async def get(db: AsyncSession, category_id: UUID) -> Category:
-        result = await db.execute(select(Category).where(Category.id == category_id))
+        result = await db.execute(
+            select(Category)
+            .where(Category.id == category_id)
+            .options(selectinload(Category.children))
+        )
         category = result.scalar_one_or_none()
         if not category:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Category not found")

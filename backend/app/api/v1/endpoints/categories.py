@@ -10,8 +10,11 @@ from app.models.user import User
 router = APIRouter(prefix="/categories", tags=["categories"])
 
 @router.get("", response_model=list[CategoryResponse])
-async def list_categories(db: AsyncSession = Depends(get_db)):
-    return await CategoryService.list(db)
+async def list_categories(
+    only_top_level: bool = False,
+    db: AsyncSession = Depends(get_db)
+):
+    return await CategoryService.list(db, only_top_level=only_top_level)
 
 @router.get("/{category_id}", response_model=CategoryResponse)
 async def get_category(category_id: UUID, db: AsyncSession = Depends(get_db)):

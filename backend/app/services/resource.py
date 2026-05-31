@@ -1,11 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from uuid import UUID
 from app.models.resource import Resource
 from app.models.rating import Rating
 from app.models.category import Category
+from app.models.tag import Tag
 from app.schemas.resource import ResourceCreate, ResourceUpdate, ResourceListResponse
+from app.schemas.tag import TagResponse
 
 class ResourceService:
     @staticmethod
@@ -14,7 +17,7 @@ class ResourceService:
             Resource,
             func.coalesce(func.avg(Rating.rating), 0).label("average_rating"),
             func.count(Rating.id).label("total_ratings"),
-        ).outerjoin(Rating, Rating.resource_id == Resource.id)
+        ).outerjoin(Rating, Rating.resource_id == Resource.id).options(selectinload(Resource.tags))
 
         if category_id:
             query = query.where(Resource.category_id == category_id)
@@ -34,6 +37,7 @@ class ResourceService:
                 created_by=row[0].created_by,
                 created_at=row[0].created_at,
                 updated_at=row[0].updated_at,
+                tags=[TagResponse.model_validate(t) for t in row[0].tags],
                 average_rating=round(float(row.average_rating), 1),
                 total_ratings=row.total_ratings,
             )
@@ -50,6 +54,7 @@ class ResourceService:
             ).outerjoin(Rating, Rating.resource_id == Resource.id)
             .where(Resource.id == resource_id)
             .group_by(Resource.id)
+            .options(selectinload(Resource.tags))
         )
         row = result.one_or_none()
         if not row:
@@ -65,28 +70,33 @@ class ResourceService:
             created_by=row[0].created_by,
             created_at=row[0].created_at,
             updated_at=row[0].updated_at,
+            tags=[TagResponse.model_validate(t) for t in row[0].tags],
             average_rating=round(float(row.average_rating), 1),
             total_ratings=row.total_ratings,
         )
 
     @staticmethod
     async def _get_raw(db: AsyncSession, resource_id: UUID) -> Resource:
-        result = await db.execute(select(Resource).where(Resource.id == resource_id))
+        result = await db.execute(
+            select(Resource).where(Resource.id == resource_id).options(selectinload(Resource.tags))
+        )
         resource = result.scalar_one_or_none()
         if not resource:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resource not found")
         return resource
 
     @staticmethod
-    async def _get_avg_data(db: AsyncSession, resource_id: UUID) -> tuple[float, int]:
-        result = await db.execute(
-            select(
-                func.coalesce(func.avg(Rating.rating), 0).label("average"),
-                func.count(Rating.id).label("total"),
-            ).where(Rating.resource_id == resource_id)
-        )
-        row = result.one()
-        return round(float(row.average), 1), row.total
+    async def _get_or_create_tags(db: AsyncSession, tag_names: list[str]) -> list[Tag]:
+        tags = []
+        for name in tag_names:
+            name = name.lower().strip()
+            result = await db.execute(select(Tag).where(Tag.name == name))
+            tag = result.scalar_one_or_none()
+            if not tag:
+                tag = Tag(name=name)
+                db.add(tag)
+            tags.append(tag)
+        return tags
 
     @staticmethod
     async def create(db: AsyncSession, data: ResourceCreate, user_id: UUID) -> ResourceListResponse:
@@ -94,7 +104,13 @@ class ResourceService:
         if not cat_check.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category not found")
 
-        resource = Resource(**data.model_dump(), created_by=user_id)
+        # Extract tags and remove from model dump
+        tag_names = data.tags
+        resource_data = data.model_dump(exclude={"tags"})
+        
+        resource = Resource(**resource_data, created_by=user_id)
+        resource.tags = await ResourceService._get_or_create_tags(db, tag_names)
+        
         db.add(resource)
         await db.commit()
         await db.refresh(resource)
@@ -109,6 +125,7 @@ class ResourceService:
             created_by=resource.created_by,
             created_at=resource.created_at,
             updated_at=resource.updated_at,
+            tags=[TagResponse.model_validate(t) for t in resource.tags],
             average_rating=0.0,
             total_ratings=0,
         )
@@ -121,6 +138,11 @@ class ResourceService:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not the owner")
 
         update_data = data.model_dump(exclude_unset=True)
+        
+        if "tags" in update_data:
+            tag_names = update_data.pop("tags")
+            resource.tags = await ResourceService._get_or_create_tags(db, tag_names)
+
         for field, value in update_data.items():
             setattr(resource, field, value)
 
@@ -139,6 +161,7 @@ class ResourceService:
             created_by=resource.created_by,
             created_at=resource.created_at,
             updated_at=resource.updated_at,
+            tags=[TagResponse.model_validate(t) for t in resource.tags],
             average_rating=average_rating,
             total_ratings=total_ratings,
         )
